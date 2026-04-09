@@ -28,26 +28,14 @@ public class SecurityConfig {
 
     // 🔐 Security configuration
     @Bean
+    
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         return http
                 .csrf(csrf -> csrf.disable())
-
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ PUBLIC APIs
-                        .requestMatchers(
-                                "/api/test",
-                                "/api/users/login",
-                                "/api/users/register"
-                        ).permitAll()
-
-                        // 🔒 PROTECTED APIs
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
-
-                // 🔥 JWT FILTER (VERY IMPORTANT)
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-
                 .build();
     }
 }
