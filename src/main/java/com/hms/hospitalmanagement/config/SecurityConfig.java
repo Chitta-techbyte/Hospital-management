@@ -4,23 +4,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import com.hms.hospitalmanagement.security.JwtFilter;
 
-// ✅ ADD THESE IMPORTS
+// password encoder
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
+    // ❌ REMOVE JWT FILTER COMPLETELY
 
-    public SecurityConfig(JwtFilter jwtFilter) {
-        this.jwtFilter = jwtFilter;
-    }
-
-    // 🔥 ADD THIS (MISSING PART)
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -31,20 +24,9 @@ public class SecurityConfig {
 
         return http
                 .csrf(csrf -> csrf.disable())
-
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS)
-                )
-
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users/register","/api/users/login").permitAll()
-                        .requestMatchers("/api/doctors/**").hasRole("ADMIN")
-                        .requestMatchers("/api/test").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()   // allow everything
                 )
-
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-
                 .build();
     }
 }
