@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,17 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getServletPath();
+
+        // 🔥 VERY IMPORTANT — SKIP PUBLIC APIs
+        if (path.equals("/api/users/login") ||
+                path.equals("/api/users/register") ||
+                path.equals("/api/test")) {
+
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -39,11 +51,10 @@ public class JwtFilter extends OncePerRequestFilter {
                 String email = jwtUtil.extractUsername(token);
                 String role = jwtUtil.extractRole(token);
 
-                // 🔥 DEBUG (optional)
                 System.out.println("JWT ROLE: " + role);
-                System.out.println("AUTH SET WITH ROLE: " + role);
 
-                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (email != null &&
+                        SecurityContextHolder.getContext().getAuthentication() == null) {
 
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(
