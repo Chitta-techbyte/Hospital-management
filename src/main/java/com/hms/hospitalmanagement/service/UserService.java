@@ -63,4 +63,7 @@ public class UserService {
 
         return user;
     }
+    public java.util.List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
 }

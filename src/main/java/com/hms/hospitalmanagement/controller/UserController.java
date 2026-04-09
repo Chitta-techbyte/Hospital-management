@@ -1,6 +1,7 @@
 package com.hms.hospitalmanagement.controller;
 
 import com.hms.hospitalmanagement.entity.User;
+import com.hms.hospitalmanagement.repository.UserRepository;
 import com.hms.hospitalmanagement.service.UserService;
 import org.springframework.web.bind.annotation.*;
 import com.hms.hospitalmanagement.dto.LoginRequest;
@@ -43,6 +44,11 @@ public class UserController {
     @GetMapping("/test")
     public String test() {
         return "Working";
+    }
+
+    @GetMapping("/all")
+    public java.util.List<User> getAllUsers() {
+        return userService.getAllUsers();
     }
 }
 
