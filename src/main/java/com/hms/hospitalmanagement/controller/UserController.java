@@ -28,7 +28,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
 
         User user = userService.loginUser(
                 request.getEmail(),
@@ -39,16 +39,15 @@ public class UserController {
                 user.getEmail(),
                 user.getRole()
         );
-        return ResponseEntity.ok(token);
-    }
-    @GetMapping("/test")
-    public String test() {
-        return "Working";
-    }
 
-    @GetMapping("/all")
-    public java.util.List<User> getAllUsers() {
-        return userService.getAllUsers();
+        return ResponseEntity.ok(
+                new LoginResponse(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail(),
+                        token   // 🔥 send token here
+                )
+        );
     }
 }
 

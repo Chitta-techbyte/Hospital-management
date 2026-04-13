@@ -15,7 +15,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.io.IOException;
 import java.util.Collections;
 
-//@Component
+@Component   // ✅ MUST BE ENABLED
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
@@ -25,21 +25,20 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+
+        String path = request.getServletPath();
+
+        return path.equals("/api/users/login") ||
+                path.equals("/api/users/register") ||
+                path.equals("/api/test");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
-
-        String path = request.getServletPath();
-
-        // 🔥 VERY IMPORTANT — SKIP PUBLIC APIs
-        if (path.equals("/api/users/login") ||
-                path.equals("/api/users/register") ||
-                path.equals("/api/test")) {
-
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         String authHeader = request.getHeader("Authorization");
 
@@ -51,41 +50,26 @@ public class JwtFilter extends OncePerRequestFilter {
                 String email = jwtUtil.extractUsername(token);
                 String role = jwtUtil.extractRole(token);
 
-                System.out.println("JWT ROLE: " + role);
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(
+                                email,
+                                null,
+                                Collections.singletonList(
+                                        new SimpleGrantedAuthority(role)
+                                )
+                        );
 
-                if (email != null &&
-                        SecurityContextHolder.getContext().getAuthentication() == null) {
+                auth.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
 
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(
-                                    email,
-                                    null,
-                                    Collections.singletonList(
-                                            new SimpleGrantedAuthority(role)
-                                    )
-                            );
-
-                    auth.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
-
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
+                SecurityContextHolder.getContext().setAuthentication(auth);
 
             } catch (Exception e) {
-                System.out.println("Invalid JWT: " + e.getMessage());
+                System.out.println("Invalid JWT");
             }
         }
 
         filterChain.doFilter(request, response);
-    }
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-
-        String path = request.getServletPath();
-
-        return path.equals("/api/users/login") ||
-                path.equals("/api/users/register") ||
-                path.equals("/api/test");
     }
 }
