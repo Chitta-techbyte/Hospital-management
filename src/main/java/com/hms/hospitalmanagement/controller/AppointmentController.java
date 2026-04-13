@@ -1,8 +1,10 @@
 package com.hms.hospitalmanagement.controller;
 
 import com.hms.hospitalmanagement.dto.AppointmentDTO;
+import com.hms.hospitalmanagement.dto.AppointmentDTO;
 import com.hms.hospitalmanagement.entity.Appointment;
 import com.hms.hospitalmanagement.service.AppointmentService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -18,17 +20,17 @@ public class AppointmentController {
     @Autowired
     private AppointmentService appointmentService;
 
-    // 🔥 BOOK
+    // 🔥 CLEAN BOOK API
     @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
     @PostMapping("/book")
-    public Appointment bookAppointment(
-            @RequestParam Long patientId,
-            @RequestParam Long doctorId,
-            @RequestParam Long userId,
-            @RequestBody Appointment appointment) {
+    public Appointment bookAppointment(@RequestBody AppointmentDTO request) {
 
         return appointmentService.bookAppointment(
-                patientId, doctorId, userId, appointment);
+                request.getPatientId(),
+                request.getDoctorId(),
+                request.getDate(),
+                request.getTimeSlot()
+        );
     }
 
     // 🔥 UPDATE STATUS
@@ -64,7 +66,7 @@ public class AppointmentController {
     }
 
     // 🔥 DOCTOR DASHBOARD
-    @PreAuthorize("hasAuthority('ROLE_DOCTOR')")
+    @PreAuthorize("hasRole('DOCTOR')")
     @GetMapping("/doctor/{doctorId}")
     public List<AppointmentDTO> getDoctorAppointments(
             @PathVariable Long doctorId,
