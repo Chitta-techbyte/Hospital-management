@@ -18,38 +18,51 @@ public class UserService {
 
     public User registerUser(User user) {
 
-        // ✅ Check duplicate email
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new DuplicateEmailException("Email already registered");
+        try {
+            System.out.println("Incoming user: " + user.getEmail());
+
+            if (user.getEmail() == null || user.getPassword() == null) {
+                throw new RuntimeException("Email or password missing");
+            }
+
+            if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+                throw new RuntimeException("Email already registered");
+            }
+
+            if (passwordEncoder == null) {
+                throw new RuntimeException("PasswordEncoder NOT initialized");
+            }
+
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+            if (user.getRole() == null || user.getRole().isEmpty()) {
+                throw new RuntimeException("Role is required");
+            }
+
+            String role = user.getRole().toUpperCase();
+
+            if (!role.startsWith("ROLE_")) {
+                role = "ROLE_" + role;
+            }
+
+            if (!role.equals("ROLE_ADMIN") &&
+                    !role.equals("ROLE_DOCTOR") &&
+                    !role.equals("ROLE_OPERATOR")) {
+                throw new RuntimeException("Invalid role: " + role);
+            }
+
+            user.setRole(role);
+
+            User savedUser = userRepository.save(user);
+
+            System.out.println("User saved successfully");
+
+            return savedUser;
+
+        } catch (Exception e) {
+            e.printStackTrace(); // 🔥 THIS WILL SHOW REAL ERROR IN LOGS
+            throw new RuntimeException("Register failed: " + e.getMessage());
         }
-
-        // ✅ Encode password
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        // 🚨 IMPORTANT: Validate role
-        if (user.getRole() == null || user.getRole().isEmpty()) {
-            throw new RuntimeException("Role is required");
-        }
-
-        // Optional: enforce allowed roles
-        String role = user.getRole().toUpperCase();
-
-// 🔥 Convert to Spring format
-        if (!role.startsWith("ROLE_")) {
-            role = "ROLE_" + role;
-        }
-
-// ✅ Validate role
-        if (!role.equals("ROLE_ADMIN") &&
-                !role.equals("ROLE_DOCTOR") &&
-                !role.equals("ROLE_OPERATOR")) {
-            throw new RuntimeException("Invalid role");
-        }
-
-        user.setRole(role);
-
-
-        return userRepository.save(user);
     }
 
     public User loginUser(String email, String password) {
