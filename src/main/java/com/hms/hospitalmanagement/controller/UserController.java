@@ -49,6 +49,28 @@ public class UserController {
                 )
         );
     }
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser() {
+
+        var auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        // No authentication
+        if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("No user authenticated");
+        }
+
+        String email = auth.getName();
+
+        return ResponseEntity.ok(
+                java.util.Map.of(
+                        "email", email,
+                        "authorities", auth.getAuthorities()
+                )
+        );
+    }
 }
 
 
