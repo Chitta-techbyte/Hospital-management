@@ -1,7 +1,7 @@
 package com.hms.hospitalmanagement.controller;
 
 import com.hms.hospitalmanagement.dto.AppointmentDTO;
-import com.hms.hospitalmanagement.dto.AppointmentDTO;
+import com.hms.hospitalmanagement.dto.AppointmentRequest;
 import com.hms.hospitalmanagement.entity.Appointment;
 import com.hms.hospitalmanagement.service.AppointmentService;
 
@@ -20,10 +20,10 @@ public class AppointmentController {
     @Autowired
     private AppointmentService appointmentService;
 
-    // 🔥 CLEAN BOOK API
+    // 🔥 BOOK
     @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
     @PostMapping("/book")
-    public Appointment bookAppointment(@RequestBody AppointmentDTO request) {
+    public Appointment bookAppointment(@RequestBody AppointmentRequest request) {
 
         return appointmentService.bookAppointment(
                 request.getPatientId(),

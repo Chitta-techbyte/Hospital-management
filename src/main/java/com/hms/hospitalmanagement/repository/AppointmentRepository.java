@@ -17,6 +17,12 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             LocalTime timeSlot
     );
 
+    boolean existsByDoctorIdAndDateAndTimeSlot(
+            Long doctorId,
+            LocalDate date,
+            LocalTime timeSlot
+    );
+
     // 🔥 Get all appointments of a doctor for a specific date
     List<Appointment> findByDoctorIdAndDate(
             Long doctorId,
@@ -25,5 +31,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     // 🔥 Get all appointments of a doctor
     List<Appointment> findByDoctorId(Long doctorId);
+
     long countByDate(LocalDate date);
 }

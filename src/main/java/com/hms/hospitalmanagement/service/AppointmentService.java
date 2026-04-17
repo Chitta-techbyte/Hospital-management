@@ -3,8 +3,10 @@ package com.hms.hospitalmanagement.service;
 import com.hms.hospitalmanagement.dto.AppointmentDTO;
 import com.hms.hospitalmanagement.entity.*;
 import com.hms.hospitalmanagement.repository.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -28,32 +30,52 @@ public class AppointmentService {
     // 🔥 BOOK APPOINTMENT
     public Appointment bookAppointment(Long patientId,
                                        Long doctorId,
-                                       Long userId,
-                                       Appointment appointment) {
+                                       LocalDate date,
+                                       LocalTime timeSlot) {
 
+        // 🔍 Fetch patient
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
+        // 🔍 Fetch doctor
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
 
-        User user = userRepository.findById(userId)
+        // 🔐 Get logged-in user safely
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        String email = auth.getName();
+
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (appointmentRepository.findByDoctorIdAndDateAndTimeSlot(
-                doctorId,
-                appointment.getDate(),
-                appointment.getTimeSlot()
-        ).isPresent()) {
+        // 🚫 Prevent double booking
+        if (appointmentRepository.existsByDoctorIdAndDateAndTimeSlot(
+                doctorId, date, timeSlot
+        )) {
             throw new RuntimeException("Time slot already booked");
         }
 
-        if (appointment.getTimeSlot().getMinute() % 15 != 0) {
-            throw new RuntimeException("Invalid time slot (use 15 min interval)");
+        // 🚫 Validate time slot (15 min interval)
+        if (timeSlot.getMinute() % 15 != 0) {
+            throw new RuntimeException("Invalid time slot (15 min interval)");
         }
 
+        // 🚫 Prevent past booking
+        if (date.isBefore(LocalDate.now())) {
+            throw new RuntimeException("Invalid date");
+        }
+
+        // 🧱 Create appointment
+        Appointment appointment = new Appointment();
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
+        appointment.setDate(date);
+        appointment.setTimeSlot(timeSlot);
         appointment.setCreatedBy(user);
         appointment.setStatus("SCHEDULED");
 
@@ -66,6 +88,13 @@ public class AppointmentService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
 
+        // ✅ Validate allowed status
+        List<String> allowed = List.of("SCHEDULED", "COMPLETED", "CANCELLED");
+
+        if (!allowed.contains(status.toUpperCase())) {
+            throw new RuntimeException("Invalid status");
+        }
+
         appointment.setStatus(status.toUpperCase());
 
         return appointmentRepository.save(appointment);
@@ -77,17 +106,27 @@ public class AppointmentService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
 
-        // 🚨 Check slot availability
-        if (appointmentRepository.findByDoctorIdAndDateAndTimeSlot(
-                appointment.getDoctor().getId(),
-                newDate,
-                newTime
-        ).isPresent()) {
-            throw new RuntimeException("Time slot already booked");
+        // 🚫 Prevent past date
+        if (newDate.isBefore(LocalDate.now())) {
+            throw new RuntimeException("Invalid date");
         }
 
+        // 🚫 Validate time slot
         if (newTime.getMinute() % 15 != 0) {
             throw new RuntimeException("Invalid time slot");
+        }
+
+        // 🚫 Avoid duplicate check for same slot
+        if (!appointment.getDate().equals(newDate) ||
+                !appointment.getTimeSlot().equals(newTime)) {
+
+            if (appointmentRepository.existsByDoctorIdAndDateAndTimeSlot(
+                    appointment.getDoctor().getId(),
+                    newDate,
+                    newTime
+            )) {
+                throw new RuntimeException("Time slot already booked");
+            }
         }
 
         appointment.setDate(newDate);
